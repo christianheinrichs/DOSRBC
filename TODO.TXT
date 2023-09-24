@@ -1,0 +1,132 @@
+- Decide whether or not to implement long file name support. In order not to
+  break cross-compatibility between FreeDOS, MS-DOS etc., implement OS
+  detection. On a standard FreeDOS installation there are at least two programs
+  which can enable long file name support or possibly emulation of that
+  particular feature. One is called DOSLFN and was compiled in 2011, another
+  one is called LFNDOS which was compiled in 1999.
+
+  As an attempt to tackle this problem, here is some batch code, which might
+  be a starting point:
+
+  @ECHO OFF
+
+  SET DOSGRDIR=C:\GAMES
+  SET DOSGAMESDIR=C:\GAMES
+
+  REM Primitive OS detection via SET variable
+  IF "%OS_NAME%" == "FreeDOS" echo FreeDOS installed
+  IF NOT "%OS_NAME%" == "FreeDOS" echo FreeDOS not installed. Assuming different DOS is present.
+
+  REM Look for binaries which provide long file name support in DOS
+  IF EXIST %DOSDIR%\BIN\DOSLFN.COM ECHO DOSLFN installed
+  IF EXIST %DOSDIR%\BIN\LFNDOS.EXE ECHO LFNDOS installed
+
+  IF NOT EXIST %DOSDIR%\BIN\DOSLFN.COM ECHO DOSLFN not installed
+  IF NOT EXIST %DOSDIR%\BIN\LFNDOS.EXE ECHO LFNDOS not installed
+
+  REM Test if DOSLFN or LFNDOS is loaded in either conventional or upper memory
+  REM via the program MEM in combination with a datapipe and GREP.
+  REM
+  REM Note: There must be a better method to do this in batch file syntax
+  MEM /C /N | GREP DOSLFN
+  MEM /C /N | GREP LFNDOS
+
+  REM Once all of those conditions are met, use a very simple example like
+  REM "Hangman". As a pseudo POC, I have created two GOTO routines. Very
+  REM unlikely that the following code works without modification or code
+  REM refactoring.
+
+  :LFNFALSE
+
+  SET HANGMAND=%DOSGRDIR%\HANGMAN
+
+  REM Step 1: DOSRBC restore
+
+  REM Installation check, then restore configuration
+  IF EXIST %HANGMAND%\HANGMAN.EXE IF EXIST HANGMAN\*.CFG ECHO Hangman: Restoring configuration
+  IF EXIST %HANGMAND%\HANGMAN.EXE IF EXIST HANGMAN\*.CFG XCOPY /I /Y "HANGMAN\*.CFG" "%HANGMAND%"
+  IF EXIST %HANGMAND%\HANGMAN.EXE IF EXIST HANGMAN\*.CFG ECHO.
+
+  IF EXIST %HANGMAND%\HANGMAN.EXE IF NOT EXIST HANGMAN\*.CFG ECHO Hangman: Configuration not found. Skipping...
+  IF EXIST %HANGMAND%\HANGMAN.EXE IF NOT EXIST HANGMAN\*.CFG ECHO.
+
+  ECHO Hangman: Done.
+  ECHO.
+
+  REM Step 2: DOSRBC backup
+
+  REM Backup configuration
+  IF EXIST %HANGMAND%\*.CFG ECHO Hangman: Backing up configuration
+  IF EXIST %HANGMAND%\*.CFG XCOPY /I /Y "%HANGMAND%\*.CFG%" "HANGMAN"
+  IF EXIST %HANGMAND%\*.CFG ECHO.
+
+  IF NOT EXIST %HANGMAND%\*.CFG ECHO Hangman: Configuration not found. Skipping...
+  IF NOT EXIST %HANGMAND%\*.CFG ECHO.
+
+  ECHO Hangman: Done.
+  ECHO.
+
+  REM Step 3: DOSRBC cleanup
+
+  REM Delete configuration
+  DEL %HANGMAND%\*.CFG
+
+  REM Delete/unset Hangman directory variable
+  set HANGMAND=
+
+  ECHO Hangman: Done.
+  ECHO.
+
+  :LFNTRUE
+
+  SET HANGMANDIR=%DOSGAMESROOTDIR%\HANGMAN
+
+  REM Step 1: DOSRBC restore
+
+  REM Installation check, then restore configuration
+  IF EXIST HANGMANDIR\HANGMAN.EXE IF EXIST HANGMAN\*.CFG ECHO Hangman: Restoring configuration
+  IF EXIST HANGMANDIR\HANGMAN.EXE IF EXIST HANGMAN\*.CFG XCOPY /I /Y "HANGMAN\*.CFG" "HANGMANDIR"
+  IF EXIST HANGMANDIR\HANGMAN.EXE IF EXIST HANGMAN\*.CFG ECHO.
+
+  IF EXIST HANGMANDIR\HANGMAN.EXE IF NOT EXIST HANGMAN\*.CFG ECHO Hangman: Configuration not found. Skipping...
+  IF EXIST HANGMANDIR\HANGMAN.EXE IF NOT EXIST HANGMAN\*.CFG ECHO.
+
+  ECHO Hangman: Done.
+  ECHO.
+
+  REM Step 2: DOSRBC backup
+
+  REM Backup configuration
+  IF EXIST HANGMANDIR\*.CFG ECHO Hangman: Backing up configuration
+  IF EXIST HANGMANDIR\*.CFG XCOPY /I /Y "HANGMANDIR\*.CFG%" "HANGMAN"
+  IF EXIST HANGMANDIR\*.CFG ECHO.
+
+  IF NOT EXIST HANGMANDIR\*.CFG ECHO Hangman: Configuration not found. Skipping...
+  IF NOT EXIST HANGMANDIR\*.CFG ECHO.
+
+  ECHO Hangman: Done.
+  ECHO.
+
+  REM Step 3: DOSRBC cleanup
+
+  REM Delete configuration
+  DEL HANGMANDIR\*.CFG
+
+  REM Delete/unset Hangman directory variable
+  set HANGMANDIR=
+
+  ECHO Hangman: Done.
+  ECHO.
+
+- Using round brackets in a DOS batch file in combination with ECHO works. Here
+  is some one line code:
+
+  ECHO WING (WING Is Not Galaga): Restoring savegames
+
+  Find out if this is considered good practice or not. On Windows, the previous
+  statement would fail. This is very likely due to the fact, that Windows batch
+  files use round brackets in FOR statements, IF statements, ELSE statements
+  and possibly in other cases as well. While at first glance, the previous ECHO
+  line doesn't seem to cause problems, it could cause problems because of the
+  colon character at the end, since, hypothetically speaking, this might
+  interfere at some point with the GOTO syntax such as GOTOPART:
